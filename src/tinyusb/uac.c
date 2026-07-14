@@ -29,6 +29,21 @@
  #include "bsp/board_api.h"
  #include "tusb.h"
  #include "usb_descriptors.h"
+ #include "pico/stdio/driver.h"
+
+static void cdc_out_chars(const char *buf, int len) {
+    if (tud_cdc_connected()) {
+        tud_cdc_write(buf, (uint32_t)len);
+        tud_cdc_write_flush();
+    }
+}
+
+static stdio_driver_t stdio_cdc = {
+    .out_chars = cdc_out_chars,
+    .out_flush = NULL,
+    .in_chars = NULL,
+    .next = NULL
+};
 
  #include "../btstack/btstack_avdtp_source.h"
  #include "pico/flash.h"
@@ -124,6 +139,7 @@
    };
    tusb_init(BOARD_TUD_RHPORT, &dev_init);
 
+   stdio_set_driver_enabled(&stdio_cdc, true);
 
  }
 

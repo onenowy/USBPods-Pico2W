@@ -748,7 +748,22 @@ static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *contex
         context->codec_storage_count = 1;
 
     if (handleLDAC_abr != NULL) {
+        int old_eqmid = ldacBT_get_eqmid(handleLDAC);
         ldac_ABR_Proc(handleLDAC, handleLDAC_abr, queue_get_level(&ready_queue), 1);
+        int new_eqmid = ldacBT_get_eqmid(handleLDAC);
+        if (new_eqmid != old_eqmid) {
+            const char* mode_name = "Unknown";
+            int kbps = 0;
+            bool is_48k = (ldac_configuration.sampling_frequency % 48000 == 0);
+            switch (new_eqmid) {
+                case 0: mode_name = "HQ"; kbps = is_48k ? 990 : 909; break;
+                case 1: mode_name = "SQ"; kbps = is_48k ? 660 : 606; break;
+                case 2: mode_name = "MQ"; kbps = is_48k ? 330 : 303; break;
+                default: break;
+            }
+            printf("[LDAC ABR] Quality changed: %s (%d kbps) | queue level: %u\n", 
+                   mode_name, kbps, (unsigned int)queue_get_level(&ready_queue));
+        }
     }
 
     while (context->samples_ready >= num_audio_samples_per_ldac_buffer && encoded == 0) {
