@@ -57,6 +57,7 @@
 
 #define HAVE_LDAC_ENCODER
 #include <ldacBT.h>
+#include <ldacBT_abr.h>
 
 #define A2DP_CODEC_VENDOR_ID_SONY 0x12d
 #define A2DP_SONY_CODEC_LDAC 0xaa
@@ -141,6 +142,7 @@ typedef struct {
 
 #ifdef HAVE_LDAC_ENCODER
 HANDLE_LDAC_BT handleLDAC;
+HANDLE_LDAC_ABR handleLDAC_abr = NULL;
 #endif
 
 
@@ -744,6 +746,10 @@ static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *contex
     // reserve first byte for number of frames
     if (context->codec_storage_count == 0)
         context->codec_storage_count = 1;
+
+    if (handleLDAC_abr != NULL) {
+        ldac_ABR_Proc(handleLDAC, handleLDAC_abr, queue_get_level(&ready_queue), 1);
+    }
 
     while (context->samples_ready >= num_audio_samples_per_ldac_buffer && encoded == 0) {
 
@@ -1630,6 +1636,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             LDACBT_SMPL_FMT_S16, ldac_configuration.sampling_frequency) == -1) {
                     printf("Couldn't initialize LDAC encoder: %d\n", ldacBT_get_error_code(handleLDAC));
                     break;
+                }
+
+                // Initialize ABR handle
+                if (handleLDAC_abr != NULL) {
+                    ldac_ABR_free_handle(handleLDAC_abr);
+                    handleLDAC_abr = NULL;
+                }
+                handleLDAC_abr = ldac_ABR_get_handle();
+                if (handleLDAC_abr != NULL) {
+                    ldac_ABR_Init(handleLDAC_abr, 20); // 20ms update interval
+                } else {
+                    printf("Failed to get LDAC ABR handle\n");
                 }
                 // HQ -> audio_timer_interval = 1
                 // SQ -> audio_timer_interval <= 5
