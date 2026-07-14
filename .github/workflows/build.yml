@@ -1,0 +1,47 @@
+name: Build Pico 2W Firmware
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib build-essential cmake ninja-build
+
+      - name: Clone Pico SDK
+        run: |
+          git clone --depth 1 --branch 2.1.1 https://github.com/raspberrypi/pico-sdk.git $GITHUB_WORKSPACE/pico-sdk
+
+      - name: Initialize Pico SDK Submodules
+        working-directory: ${{ github.workspace }}/pico-sdk
+        run: |
+          git submodule update --init lib/tinyusb lib/btstack lib/cyw43-driver lib/lwip lib/mbedtls
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPICO_SDK_PATH=$GITHUB_WORKSPACE/pico-sdk \
+            -DPICO_BOARD=pico2_w
+
+      - name: Build Project
+        run: |
+          cmake --build build
+
+      - name: Upload UF2 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pico2W-USBPods-Firmware
+          path: |
+            build/*.uf2
+            build/*.elf
