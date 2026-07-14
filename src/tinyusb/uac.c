@@ -415,6 +415,21 @@ void tinyusb_control_task(void){
       is_usb_audio_running = true;
       spk_data_size = 0;
     }
+    else if (current_resolution == 32)
+    {
+      int32_t *src32 = (int32_t *)spk_buf;
+      int16_t *dst16 = (int16_t *)spk_buf;
+      uint16_t sample_count = spk_data_size / 8;
+
+      for (uint16_t i = 0; i < sample_count * 2; i++) {
+        dst16[i] = (int16_t)(src32[i] >> 16);
+      }
+
+      audio_slot_push_samples(dst16, sample_count);
+
+      is_usb_audio_running = true;
+      spk_data_size = 0;
+    }
    } 
 
    return true;

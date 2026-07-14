@@ -122,11 +122,11 @@ extern "C" {
 #define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX                           0
 #define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_RX                           2
 
-// 16bit in 16bit slots
+// 32bit in 32bit slots
 //#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_N_BYTES_PER_SAMPLE_TX          2
 //#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_RESOLUTION_TX                  16
-#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_N_BYTES_PER_SAMPLE_RX          2
-#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_RESOLUTION_RX                  16
+#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_N_BYTES_PER_SAMPLE_RX          4
+#define CFG_TUD_AUDIO_FUNC_1_FORMAT_1_RESOLUTION_RX                  32
 
 #if defined(__RX__)
 // 8bit in 8bit slots
