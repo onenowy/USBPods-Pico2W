@@ -143,6 +143,7 @@ typedef struct {
 #ifdef HAVE_LDAC_ENCODER
 HANDLE_LDAC_BT handleLDAC;
 HANDLE_LDAC_ABR handleLDAC_abr = NULL;
+static float smoothed_queue_depth = 0.0f;
 #endif
 
 
@@ -748,8 +749,11 @@ static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *contex
         context->codec_storage_count = 1;
 
     if (handleLDAC_abr != NULL) {
+        float current_depth = (float)queue_get_level(&ready_queue);
+        smoothed_queue_depth = (smoothed_queue_depth * 0.9f) + (current_depth * 0.1f);
+
         int old_eqmid = ldacBT_get_eqmid(handleLDAC);
-        ldac_ABR_Proc(handleLDAC, handleLDAC_abr, queue_get_level(&ready_queue), 1);
+        ldac_ABR_Proc(handleLDAC, handleLDAC_abr, (unsigned int)(smoothed_queue_depth + 0.5f), 1);
         int new_eqmid = ldacBT_get_eqmid(handleLDAC);
         if (new_eqmid != old_eqmid) {
             const char* mode_name = "Unknown";
@@ -761,8 +765,8 @@ static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *contex
                 case 2: mode_name = "MQ"; kbps = is_48k ? 330 : 303; break;
                 default: break;
             }
-            printf("[LDAC ABR] Quality changed: %s (%d kbps) | queue level: %u\n", 
-                   mode_name, kbps, (unsigned int)queue_get_level(&ready_queue));
+            printf("[LDAC ABR] Quality changed: %s (%d kbps) | queue level (raw/smoothed): %u/%u\n", 
+                   mode_name, kbps, (unsigned int)queue_get_level(&ready_queue), (unsigned int)(smoothed_queue_depth + 0.5f));
         }
     }
 
@@ -1661,6 +1665,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 handleLDAC_abr = ldac_ABR_get_handle();
                 if (handleLDAC_abr != NULL) {
                     ldac_ABR_Init(handleLDAC_abr, 20); // 20ms update interval
+                    ldac_ABR_set_thresholds(handleLDAC_abr, 8, 5, 3);
+                    smoothed_queue_depth = 0.0f;
                 } else {
                     printf("Failed to get LDAC ABR handle\n");
                 }
